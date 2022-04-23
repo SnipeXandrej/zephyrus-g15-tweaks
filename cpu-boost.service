@@ -1,0 +1,10 @@
+[Unit]
+Description=CPU Boost scheduler I guess
+
+[Service]
+StandardOutput=null
+StandardError=journal
+ExecStart=/home/systemd-scripts/cpu-boost.sh
+
+[Install]
+WantedBy=multi-user.target
