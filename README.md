@@ -18,7 +18,9 @@ Of course big thanks goes to [whyyfu](https://www.reddit.com/user/whyyfu/) from 
 This means that you can use the GPU whenever you want but when you for example stop playing a game the GPU will automatically turn it's self off to preserve power, leading to better battery life overall. Which is probably what everyone wants!
 
 **So here are the steps you have to take (on Arch) to make D3 power state work on the the GPU**
-**Of course this is used when using the proprietary drivers!**
+
+**Of course this is done when using the proprietary drivers!**
+
 **And you need at LEAST Ryzen 4000 series CPU (for now) and the GPU based on Turing!**
 * Create a file `nvidia.conf` in `/etc/modprobe.d/` by typing `sudo nano /etc/modprobe.d/nvidia.conf` into terminal and copy/paste `options nvidia "NVreg_DynamicPowerManagement=0x02` into the file. This enables the power management.
 * Turn off NVIDIA modeset by putting `nvidia-drm.modeset=0` in the kernel cmdline, and for good measures also `rd.driver.blacklist=nouveau modprobe.blacklist=nouveau`, this will block nouveau from loading.
@@ -28,6 +30,7 @@ This means that you can use the GPU whenever you want but when you for example s
 
 # CPU Tweaks
 **Required package is: cpupower**
+
 I have noticed that when having CPU Boost clocks enabled the laptop can sound like a jet taking off and the battery life gets worse.
 
 So I have made a simple bash script to enable the CPU Boost when connected to a charger and disable the Boosts when on battery. I also made a simple systemd-service file for it.
