@@ -14,7 +14,7 @@ BATTERY=$(cat /sys/class/power_supply/BAT0/status)
 	elif [[ $BATTERY == 'Not charging' && $ENABLEBOOST == '0' ]]
 	then
 		echo 0 > /sys/devices/system/cpu/cpufreq/boost
-		cpupower frequency-set -g conservative
+		cpupower frequency-set -g schedutil
 	elif [[ $BATTERY == 'Charging' && $ENABLEBOOST == '1' ]]
 	then
 		echo 1 > /sys/devices/system/cpu/cpufreq/boost
@@ -22,7 +22,7 @@ BATTERY=$(cat /sys/class/power_supply/BAT0/status)
 	elif [[ $BATTERY == 'Charging' && $ENABLEBOOST == '0' ]]
 	then
 		echo 0 > /sys/devices/system/cpu/cpufreq/boost
-		cpupower frequency-set -g conservative
+		cpupower frequency-set -g schedutil
 	fi
 sleep 3
 done
