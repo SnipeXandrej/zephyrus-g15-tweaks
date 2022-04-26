@@ -22,10 +22,10 @@ This means that you can use the GPU whenever you want but when you for example s
 **Of course this is done when using the proprietary drivers!**
 
 **And you need at LEAST a Ryzen 4000 series CPU (for now) and the GPU to be based on Turing!**
-* Create a file called `nvidia.conf` in `/etc/modprobe.d/` by typing `sudo nano /etc/modprobe.d/nvidia.conf` into terminal and copy/paste `options nvidia "NVreg_DynamicPowerManagement=0x02` into the file. This enables the power management.
+* Create a file called `nvidia.conf` in `/etc/modprobe.d/` by typing `sudo nano /etc/modprobe.d/nvidia.conf` into terminal and copy/paste `options nvidia "NVreg_DynamicPowerManagement=0x02"` into the file. This enables the power management.
 * Turn off NVIDIA modeset by putting `nvidia-drm.modeset=0` in the kernel cmdline, and for good measure also `rd.driver.blacklist=nouveau modprobe.blacklist=nouveau`, this will block nouveau from loading.
 * Run `sudo rm -f /usr/share/glvnd/egl_vendor.d/10_nvidia.json`. This file points to the EGL library, but that file seems to prevent the GPU from going into the D3 power state, so we remove it.
-* And if you are using any login/display managers that use Xorg you have to remove (Please backup these files if anything goes wrong!) any config that points to NVIDIA because that seems to load an Xorg process on the GPU that will always run on it and will prevent the GPU from going into the D3 state. These configs are located in `/etc/X11/` `etc/X11/xorg.conf.d/` and `/usr/share/X11/xorg.conf.d/`. There is a good chance that there are probably two located in `/usr/share/X11/xorg.conf.d/` named `10-nvidia-drm-outputclass.conf` and `90-nvidia-screen-G05.conf`, if so rename/backup/delete them.
+* And if you are using any login/display managers that use Xorg you have to remove (Please backup these files if anything goes wrong!) any config that points to NVIDIA because that seems to load an Xorg process on the GPU that will always run on it and will prevent the GPU from going into the D3 state. These configs are located in `/etc/X11/` `etc/X11/xorg.conf.d/` and `/usr/share/X11/xorg.conf.d/`. There is a good chance that there are probably two located in `/usr/share/X11/xorg.conf.d/` named `10-nvidia-drm-outputclass.conf` and/or `90-nvidia-screen-G05.conf`, if so rename/backup/delete them.
 * Create a new file at `/lib/udev/rules.d/` called `80-nvidia-pm.rules` and copy/paste this into it
 ```
 #Remove NVIDIA USB xHCI Host Controller devices, if present
