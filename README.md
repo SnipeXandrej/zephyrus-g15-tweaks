@@ -17,16 +17,18 @@ Of course big thanks goes to [whyyfu](https://www.reddit.com/user/whyyfu/) from 
 
 This means that you can use the GPU whenever you want but when you for example stop playing a game the GPU will automatically turn it's self off to preserve power, leading to better battery life overall. Which is probably what everyone wants!
 
-**So here are the steps you have to take (on Arch) to make D3 power state work on the the GPU**
 
 **Of course this is done when using the proprietary drivers!**
 
-**And you need at LEAST a Ryzen 4000 series Zen 2 CPU (for now) and the GPU to be based on Turing!**
-* Create a file called `nvidia.conf` in `/etc/modprobe.d/` by typing `sudo nano /etc/modprobe.d/nvidia.conf` into terminal and copy/paste `options nvidia "NVreg_DynamicPowerManagement=0x02"` into the file. This enables the power management.
-* Turn off NVIDIA modeset by putting `nvidia-drm.modeset=0` in the kernel cmdline, and for good measure also `rd.driver.blacklist=nouveau modprobe.blacklist=nouveau`, this will block nouveau from loading.
-* Run `sudo rm -f /usr/share/glvnd/egl_vendor.d/10_nvidia.json`. This file points to the EGL library, but that file seems to prevent the GPU from going into the D3 power state, so we remove it.
-* And if you are using any login/display managers that use Xorg you have to remove (Please backup these files if anything goes wrong!) any config that points to NVIDIA because that seems to load an Xorg process on the GPU that will always run on it and will prevent the GPU from going into the D3 state. These configs are located in `/etc/X11/` `etc/X11/xorg.conf.d/` and `/usr/share/X11/xorg.conf.d/`. There should be one located in `/usr/share/X11/xorg.conf.d/` named `10-nvidia-drm-outputclass.conf`, so rename/move/delete it. (At first try only removing the `10-nvidia-drm-outputclass.conf` config, I think this one is the main culprit here.)
-* Create a new file at `/lib/udev/rules.d/` called `80-nvidia-pm.rules` and copy/paste this into it
+**And you need at LEAST a Ryzen 4000 series Zen 2 CPU (older have to be tested) and the GPU to be based on Turing!**
+
+**So here are the steps you have to take to make D3 power state work**
+
+1. * Create a file called `nvidia.conf` in `/etc/modprobe.d/` by typing `sudo nano /etc/modprobe.d/nvidia.conf` into terminal and copy/paste `options nvidia "NVreg_DynamicPowerManagement=0x02"` into the file. This enables the power management.
+2. * Turn off NVIDIA modeset by putting `nvidia-drm.modeset=0` in the kernel cmdline, and for good measure also `rd.driver.blacklist=nouveau modprobe.blacklist=nouveau`, this will block nouveau from loading.
+3. * Run `sudo rm -f /usr/share/glvnd/egl_vendor.d/10_nvidia.json`. This file points to the EGL library, but that file seems to prevent the GPU from going into the D3 power state, so we remove it.
+4. * And if you are using any login/display managers that uses Xorg you will have to remove (Please backup these files if anything goes wrong!) any config that points to NVIDIA because that seems to load an Xorg process on the GPU that will always run on it and will prevent the GPU from going into the D3 state. These configs are located in `/etc/X11/` `etc/X11/xorg.conf.d/` and `/usr/share/X11/xorg.conf.d/`. There should be one located in `/usr/share/X11/xorg.conf.d/` named `10-nvidia-drm-outputclass.conf`, so delete it.
+5. * Create a new file at `/lib/udev/rules.d/` called `80-nvidia-pm.rules` and copy/paste this into it
 ```
 #Remove NVIDIA USB xHCI Host Controller devices, if present
 ACTION=="add", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0c0330", ATTR{remove}="1"
@@ -52,6 +54,8 @@ To check if it worked, run `cat /sys/class/drm/card0/device/power_state` in term
 
 To check power draw, run `cat /sys/class/power_supply/BAT0/power_now` in terminal.
 
+**Beware that after each update of the NVIDIA package you will have to repeat steps 3 and 4!**
+
 # CPU Tweaks
 **Required package is: cpupower**
 
@@ -63,7 +67,7 @@ For now I have made it so the scripts (.sh files) are located at `/home/systemd-
 
 
 Also you need to place a file called `cpu-boost-enableboost` in `/home/systemd-scripts`, it's used to enable or disable boost clocks when plugged in.
-To enable boost clocks with the charger plugged in, type `echo 1 > /home/systemd-scripts/cpu-boost-enableboost` and to disable boosts even when the charger is plugged in, type `echo 0 > /home/systemd-scripts/cpu-boost-enableboost`. This writes 1 or 0 to file.
+To enable boost clocks with the charger plugged in, type `echo 1 > /home/systemd-scripts/cpu-boost-enableboost` and to disable boosts even when the charger is plugged in, type `echo 0 > /home/systemd-scripts/cpu-boost-enableboost`. This writes 1 or 0 to the file.
 
 
 This script also changes the governor of the cpu. When plugged in, it changes to schedutil, and to conservative when on battery.
