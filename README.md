@@ -59,7 +59,7 @@ To check power draw, run `cat /sys/class/power_supply/BAT0/power_now` in termina
 **Beware that after each update of the NVIDIA package you will have to repeat steps 3 and 4!**
 
 # CPU/iGPU Tweaks
-**Required packages are: cpupower and ryzenadj**
+**Required package is ryzenadj**
 
 I have made a simple script where you can adjust all sorts of values that will change depending on what power profile you will use (Power Save / Balanced / Performance). For example you can choose the maximum power draw of the CPU, enable or disable cpu boost clocks and much more.
 
