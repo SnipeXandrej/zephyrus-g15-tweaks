@@ -84,7 +84,7 @@ PS_GPU_PERFORMANCE_MODE=0               # When off the power profile for iGPU is
 B_A=25000
 B_B=25000
 B_C=25000
-B_K=95000
+B_K=90000
 B_F=97
 B_GOVERNOR=conservative
 B_DC_AC=power-saving
@@ -96,7 +96,7 @@ B_GPU_PERFORMANCE_MODE=1
 P_A=50000
 P_B=50000
 P_C=50000
-P_K=110000
+P_K=90000
 P_F=97
 P_GOVERNOR=schedutil
 P_DC_AC=max-performance
@@ -133,9 +133,9 @@ do
 		ryzenadj -a $B_A -b $B_B -c $B_C -k $B_K -f $B_F
 		cpupower frequency-set -g $B_GOVERNOR
 		cpupower frequency-set --max 5GHz
-                sudo systemctl set-property --runtime -- user.slice AllowedCPUs=$B_ALLOWEDCPUS
-                sudo systemctl set-property --runtime -- system.slice AllowedCPUs=$B_ALLOWEDCPUS
-                sudo systemctl set-property --runtime -- init.scope AllowedCPUs=$B_ALLOWEDCPUS
+        systemctl set-property --runtime -- user.slice AllowedCPUs=$B_ALLOWEDCPUS
+        systemctl set-property --runtime -- system.slice AllowedCPUs=$B_ALLOWEDCPUS
+        systemctl set-property --runtime -- init.scope AllowedCPUs=$B_ALLOWEDCPUS
 		gpu
                if [[ $B_BOOSTCLOCK == 1 ]]
                 then
@@ -149,9 +149,9 @@ do
 		ryzenadj -a $P_A -b $P_B -c $P_C -k $P_K -f $P_F
 		cpupower frequency-set -g $P_GOVERNOR
 		cpupower frequency-set --max 5GHz
-                sudo systemctl set-property --runtime -- user.slice AllowedCPUs=$P_ALLOWEDCPUS
-                sudo systemctl set-property --runtime -- system.slice AllowedCPUs=$P_ALLOWEDCPUS
-                sudo systemctl set-property --runtime -- init.scope AllowedCPUs=$P_ALLOWEDCPUS
+        systemctl set-property --runtime -- user.slice AllowedCPUs=$P_ALLOWEDCPUS
+        systemctl set-property --runtime -- system.slice AllowedCPUs=$P_ALLOWEDCPUS
+        systemctl set-property --runtime -- init.scope AllowedCPUs=$P_ALLOWEDCPUS
 		gpu
                 if [[ $P_BOOSTCLOCK == 1 ]]
                 then
