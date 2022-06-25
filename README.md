@@ -1,3 +1,5 @@
+# You are doing everything at your OWN risk! I do not hold any liability for any damages done to your hardware!
+
 # Zephyrus G15 Tweaks (2020 model)
 Here I just want to share my personal tweaks/scripts that I use on my daily-driver laptop.
 
