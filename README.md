@@ -56,34 +56,15 @@ To check power draw, run `cat /sys/class/power_supply/BAT0/power_now` in termina
 
 **Beware that after each update of the NVIDIA package you will have to repeat steps 3 and 4!**
 
-# CPU Tweaks
-**Required package is: cpupower**
+# CPU/iGPU Tweaks
+**Required packages are: cpupower and ryzenadj**
 
-I have noticed that when having CPU Boost clocks enabled the laptop can sound like a jet taking off and the battery life gets worse.
-
-So I have made a simple bash script to enable the CPU Boost when connected to a charger and disable the Boosts when on battery. I also made a simple systemd-service file for it.
-
-For now I have made it so the scripts (.sh files) are located at `/home/systemd-scripts` so copy `cpu-boost.sh` into `/home/systemd-scripts/` so it will be like so: `/home/systemd-scripts/cpu-boost.sh`. Then for starting it as a service we have to copy `cpu-boost.service` into `/etc/systemd/system`. After having done that we have to start/enable the service. Firstly use `sudo systemctl daemon-reload` and then `sudo systemctl enable cpu-boost --now` to enable and start it.
+I have made a simple script where you can adjust all sorts of values that will change depending on what power profile you will use (Power Save / Balanced / Performance). For example you can choose the maximum power draw of the CPU, enable or disable cpu boost clocks and much more.
 
 
-Also you need to place a file called `cpu-boost-enableboost` in `/home/systemd-scripts`, it's used to enable or disable boost clocks when plugged in.
-To enable boost clocks with the charger plugged in, type `echo 1 > /home/systemd-scripts/cpu-boost-enableboost` and to disable boosts even when the charger is plugged in, type `echo 0 > /home/systemd-scripts/cpu-boost-enableboost`. This writes 1 or 0 to the file.
+To "install" this script you have to put it in the root directory (so the path will be like so: `/power-profiles.sh`).
+To have the script started at boot you have to create a systemd service, one way is to copy the `power-profiles.service` file to `/etc/systemd/system/`, then type `sudo systemctl daemon-reload` and `sudo systemctl enable power-profiles --now` in your terminal to enable/start the service.
 
+**Miscellaneous tweaks**
 
-This script also changes the governor of the cpu. When plugged in, it changes to schedutil, and to conservative when on battery.
-
-# AMD GPU
-Increasing shared RAM for the AMD APU from the default 3GB to 4GB (or more if you want). To increase VRAM you need to add `amdgpu.gttsize=4096` in the kernel cmdline. (Size is in MEGABYTES, so 4096 equals to 4GB)
-
-Also for some reason the AMD GPU likes to have the clocks always high and that increases the power consumption and therefore reducing battery life.
-Because of this problem I have created a simple script so when the load is low the power setting of the GPU will be at `LOW` and after reaching a certain threshold it will change the power setting to "High" or "Auto". This also makes the desktop a little less smoother, so it's on you if you want to use it.
-
-To use this script, copy `gpu-governor.sh` into `/home/systemd-scripts` so it will be located like so: `/home/systemd-scripts/gpu-governor.sh`.
-And to set it up as a service we need to copy `gpu-governor.service` into `/etc/systemd/system`. Afterwards run `sudo systemctl daemon-reload` and to start/enable the service run `sudo systemctl enable gpu-governor --now`
-
-This script is meant to be used WITH the NVIDIA GPU enabled, or else it wont work, but it's easy to modify it to work even without.
-
-# Miscellaneous
-* Set screen refresh rate to 120Hz instead of using 240Hz to save power. The simplest way to have 120Hz is to put `video=1920x1080@120` in the kernel cmdline.
-
-# Also check out RyzenCtrl and ryzenadj for controlling the power of the CPU.
+Increasing the shared VRAM for the AMD APU from the default 3GB to 4GB (or more if you want). To increase VRAM you need to add `amdgpu.gttsize=4096` in the kernel cmdline. (Size is in MEGABYTES, so 4096 equals to 4GB)
