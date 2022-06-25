@@ -118,7 +118,6 @@ do
 		systemctl set-property --runtime -- user.slice AllowedCPUs=$PS_ALLOWEDCPUS
 		systemctl set-property --runtime -- system.slice AllowedCPUs=$PS_ALLOWEDCPUS
 		systemctl set-property --runtime -- init.scope AllowedCPUs=$PS_ALLOWEDCPUS
-		echo 0 > /sys/devices/system/cpu/cpufreq/boost
 		gpu
                 if [[ $PS_BOOSTCLOCK == 1 ]]
                 then
