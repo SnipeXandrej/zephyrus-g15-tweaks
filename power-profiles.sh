@@ -57,28 +57,36 @@ else
 fi
 }
 
-##Misc. stuff
-# Disable D3cold on nvme ssd
-##echo 0 > /sys/bus/pci/devices/0000:04:00.0/d3cold_allowed 
-# Mask faulty interrupt
-#echo "mask" >  /sys/firmware/acpi/interrupts/gpe19
-
 # integrated/dedicated GPU number
 # check your cardX number with "ls /dev/dri"
 IGPU=card0
 DGPU=card1
 
+# A > Sustained Power Limit (mW)
+# B > ACTUAL Power Limit    (mW)
+# C > Average Power Limit   (mW)
+# K > VRM EDC Current       (mA)
+# F > Max Tctl              (C)
+# GOVERNOR > CPUPower governor (Check them with "cat cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors")
+# DC_AC > secret power modes (power-saving / max-performance)
+# BOOSTCLOCK > enable CPU boost clocks (set 1 for on, 0 for off)
+# ALLOWEDCPUS > How many CPU cores should be active
+# CPU_MAX_FREQ > Specify the highest frequency the CPU should run at (Check them with "cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies")
+# GPU_PERFORMANCE_MODE > When off the power profile for iGPU is set to LOW and slightly reduces overall system performance
+
+
 # Power-Save profile
-PS_A=22000                              # Sustained Power Limit (mW)
-PS_B=22000                              # ACTUAL Power Limit    (mW)
-PS_C=22000                              # Average Power Limit   (mW)
-PS_K=90000                              # VRM EDC Current       (mA)
-PS_F=97                                 # Max Tctl              (C)
-PS_GOVERNOR=powersave                   # CPUPower governor
-PS_DC_AC=power-saving                   # secret power modes (power-saving / max-performance)
-PS_BOOSTCLOCK=0                         # enable CPU boost clocks (set 1 for on, 0 for off)
-PS_ALLOWEDCPUS=0-15			# How many CPU cores should be active
-PS_GPU_PERFORMANCE_MODE=0               # When off the power profile for iGPU is set to LOW and slightly reduces overall system performance
+PS_A=22000
+PS_B=22000
+PS_C=22000
+PS_K=90000
+PS_F=97
+PS_GOVERNOR=conservative
+PS_DC_AC=power-saving
+PS_BOOSTCLOCK=0
+PS_ALLOWEDCPUS=0-15
+PS_CPU_MAX_FREQ=1400000
+PS_GPU_PERFORMANCE_MODE=0
 
 # Balanced profile
 B_A=25000
@@ -90,6 +98,7 @@ B_GOVERNOR=conservative
 B_DC_AC=power-saving
 B_BOOSTCLOCK=0
 B_ALLOWEDCPUS=0-15
+B_CPU_MAX_FREQ=3000000
 B_GPU_PERFORMANCE_MODE=1
 
 # Performance profile
@@ -102,6 +111,7 @@ P_GOVERNOR=schedutil
 P_DC_AC=max-performance
 P_BOOSTCLOCK=1
 P_ALLOWEDCPUS=0-15
+P_CPU_MAX_FREQ=3000000
 P_GPU_PERFORMANCE_MODE=1
 
 # loop
@@ -113,8 +123,8 @@ do
 	  power-saver)
 		ryzenadj --$PS_DC_AC
 		ryzenadj -a $PS_A -b $PS_B -c $PS_C -k $PS_K -f $PS_F
-		cpupower frequency-set -g $PS_GOVERNOR
-		cpupower frequency-set --max 1.70GHz
+		echo $PS_GOVERNOR | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+		echo $PS_CPU_MAX_FREQ | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq
 		systemctl set-property --runtime -- user.slice AllowedCPUs=$PS_ALLOWEDCPUS
 		systemctl set-property --runtime -- system.slice AllowedCPUs=$PS_ALLOWEDCPUS
 		systemctl set-property --runtime -- init.scope AllowedCPUs=$PS_ALLOWEDCPUS
@@ -130,11 +140,11 @@ do
  	  balanced)
 		ryzenadj --$B_DC_AC
 		ryzenadj -a $B_A -b $B_B -c $B_C -k $B_K -f $B_F
-		cpupower frequency-set -g $B_GOVERNOR
-		cpupower frequency-set --max 5GHz
-        systemctl set-property --runtime -- user.slice AllowedCPUs=$B_ALLOWEDCPUS
-        systemctl set-property --runtime -- system.slice AllowedCPUs=$B_ALLOWEDCPUS
-        systemctl set-property --runtime -- init.scope AllowedCPUs=$B_ALLOWEDCPUS
+		echo $B_GOVERNOR | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+		echo $B_CPU_MAX_FREQ | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq
+		systemctl set-property --runtime -- user.slice AllowedCPUs=$B_ALLOWEDCPUS
+		systemctl set-property --runtime -- system.slice AllowedCPUs=$B_ALLOWEDCPUS
+		systemctl set-property --runtime -- init.scope AllowedCPUs=$B_ALLOWEDCPUS
 		gpu
                if [[ $B_BOOSTCLOCK == 1 ]]
                 then
@@ -146,11 +156,11 @@ do
 	 performance)
 		ryzenadj --$P_DC_AC
 		ryzenadj -a $P_A -b $P_B -c $P_C -k $P_K -f $P_F
-		cpupower frequency-set -g $P_GOVERNOR
-		cpupower frequency-set --max 5GHz
-        systemctl set-property --runtime -- user.slice AllowedCPUs=$P_ALLOWEDCPUS
-        systemctl set-property --runtime -- system.slice AllowedCPUs=$P_ALLOWEDCPUS
-        systemctl set-property --runtime -- init.scope AllowedCPUs=$P_ALLOWEDCPUS
+		echo $P_GOVERNOR | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+		echo $P_CPU_MAX_FREQ | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq
+		systemctl set-property --runtime -- user.slice AllowedCPUs=$P_ALLOWEDCPUS
+		systemctl set-property --runtime -- system.slice AllowedCPUs=$P_ALLOWEDCPUS
+		systemctl set-property --runtime -- init.scope AllowedCPUs=$P_ALLOWEDCPUS
 		gpu
                 if [[ $P_BOOSTCLOCK == 1 ]]
                 then
