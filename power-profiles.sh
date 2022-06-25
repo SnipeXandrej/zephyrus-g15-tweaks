@@ -1,7 +1,6 @@
 #!/bin/bash
 # Setting variables and function(s)
-echo "auto" > /sys/class/drm/card0/device/power_dpm_force_performance_level
-echo "auto" > /sys/class/drm/card1/device/power_dpm_force_performance_level
+echo "auto" > /sys/class/drm/$IGPU/device/power_dpm_force_performance_level
 
 # If the iGPU's load goes above 90% the iGPU performance level will be set to "auto"
 # After 1 second it checks if the load has dropped below 34% after switching the performance level
