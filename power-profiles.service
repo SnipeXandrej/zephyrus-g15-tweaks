@@ -1,0 +1,10 @@
+[Unit]
+Description=Custom power profiles I guess
+
+[Service]
+ExecStart=/power-profiles.sh
+StandardOutput=null
+StandardError=journal
+
+[Install]
+WantedBy=default.target
