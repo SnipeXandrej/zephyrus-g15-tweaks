@@ -1,5 +1,62 @@
 #!/bin/bash
 # Setting variables and function(s)
+
+# A > Sustained Power Limit (mW)
+# B > ACTUAL Power Limit    (mW)
+# C > Average Power Limit   (mW)
+# K > VRM EDC Current       (mA)
+# F > Max Tctl              (C)
+# GOVERNOR > CPUPower governor (Check them with "cat cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors")
+# DC_AC > secret power modes (power-saving / max-performance)
+# BOOSTCLOCK > enable CPU boost clocks (set 1 for on, 0 for off)
+# ALLOWEDCPUS > How many CPU cores should be active
+# CPU_MAX_FREQ > Specify the highest frequency the CPU should run at (Check them with "cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies")
+# GPU_PERFORMANCE_MODE > When off the power profile for iGPU is set to LOW and slightly reduces overall system performance
+
+# Power-Save profile
+PS_A=65000
+PS_B=22000
+PS_C=65000
+PS_K=90000
+PS_F=97
+PS_GOVERNOR=conservative
+PS_DC_AC=power-saving
+PS_BOOSTCLOCK=0
+PS_ALLOWEDCPUS=0-15
+PS_CPU_MAX_FREQ=1400000
+PS_GPU_PERFORMANCE_MODE=0
+
+# Balanced profile
+B_A=65000
+B_B=20000
+B_C=65000
+B_K=90000
+B_F=97
+B_GOVERNOR=conservative
+B_DC_AC=max-performance
+B_BOOSTCLOCK=0
+B_ALLOWEDCPUS=0-15
+B_CPU_MAX_FREQ=3000000
+B_GPU_PERFORMANCE_MODE=1
+
+# Performance profile
+P_A=65000
+P_B=35000
+P_C=65000
+P_K=110000
+P_F=97
+P_GOVERNOR=schedutil
+P_DC_AC=max-performance
+P_BOOSTCLOCK=1
+P_ALLOWEDCPUS=0-15
+P_CPU_MAX_FREQ=3000000
+P_GPU_PERFORMANCE_MODE=1
+
+# integrated/dedicated GPU number
+# check your cardX number with "ls /dev/dri"
+IGPU=card0
+DGPU=card1
+
 echo "auto" > /sys/class/drm/$IGPU/device/power_dpm_force_performance_level
 
 # If the iGPU's load goes above 90% the iGPU performance level will be set to "auto"
@@ -17,7 +74,7 @@ then
 fi
 }
 
-# Check if CPU Boostclock is enabled -> if yes -> put the performance level of the iGPU to "auto" 
+# Check if CPU Boostclock is enabled -> if yes -> put the performance level of the iGPU to "auto"
 # 				     -> if not -> continue to the gpu_governor function
 ## Why put the iGPU to the performance level "auto" when the boostclock is enabled?
 ## When the iGPU is set to "low" the memory clock drops to 400MHz and limits the CPU's performance to about 80% of its actual potential
@@ -55,63 +112,6 @@ else
         gpu_cpu_boostclock
 fi
 }
-
-# integrated/dedicated GPU number
-# check your cardX number with "ls /dev/dri"
-IGPU=card0
-DGPU=card1
-
-# A > Sustained Power Limit (mW)
-# B > ACTUAL Power Limit    (mW)
-# C > Average Power Limit   (mW)
-# K > VRM EDC Current       (mA)
-# F > Max Tctl              (C)
-# GOVERNOR > CPUPower governor (Check them with "cat cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors")
-# DC_AC > secret power modes (power-saving / max-performance)
-# BOOSTCLOCK > enable CPU boost clocks (set 1 for on, 0 for off)
-# ALLOWEDCPUS > How many CPU cores should be active
-# CPU_MAX_FREQ > Specify the highest frequency the CPU should run at (Check them with "cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies")
-# GPU_PERFORMANCE_MODE > When off the power profile for iGPU is set to LOW and slightly reduces overall system performance
-
-
-# Power-Save profile
-PS_A=22000
-PS_B=22000
-PS_C=22000
-PS_K=90000
-PS_F=97
-PS_GOVERNOR=conservative
-PS_DC_AC=power-saving
-PS_BOOSTCLOCK=0
-PS_ALLOWEDCPUS=0-15
-PS_CPU_MAX_FREQ=1400000
-PS_GPU_PERFORMANCE_MODE=0
-
-# Balanced profile
-B_A=25000
-B_B=25000
-B_C=25000
-B_K=90000
-B_F=97
-B_GOVERNOR=conservative
-B_DC_AC=power-saving
-B_BOOSTCLOCK=0
-B_ALLOWEDCPUS=0-15
-B_CPU_MAX_FREQ=3000000
-B_GPU_PERFORMANCE_MODE=1
-
-# Performance profile
-P_A=50000
-P_B=50000
-P_C=50000
-P_K=90000
-P_F=97
-P_GOVERNOR=schedutil
-P_DC_AC=max-performance
-P_BOOSTCLOCK=1
-P_ALLOWEDCPUS=0-15
-P_CPU_MAX_FREQ=3000000
-P_GPU_PERFORMANCE_MODE=1
 
 # loop
 while :
