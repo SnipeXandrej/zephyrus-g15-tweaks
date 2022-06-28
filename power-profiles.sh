@@ -53,21 +53,18 @@ P_CPU_MAX_FREQ=3000000
 P_GPU_PERFORMANCE_MODE=1
 
 # integrated/dedicated GPU number
-# check your cardX number with "ls /dev/dri"
+# It's going to be either card1 or card0
 IGPU=card0
 DGPU=card1
 
 echo "auto" > /sys/class/drm/$IGPU/device/power_dpm_force_performance_level
 
 # If the iGPU's load goes above 90% the iGPU performance level will be set to "auto"
-# After 1 second it checks if the load has dropped below 34% after switching the performance level
-# If it's below the threshold the performance level will be set to "low"
+# If it's below the threshold after a certain amount of time the performance level will be set to "low"
 gpu_governor() {
-echo 1
 if [[ $(cat /sys/class/drm/$IGPU/device/gpu_busy_percent) -gt 90 ]]
 then
         echo "auto" > /sys/class/drm/$IGPU/device/power_dpm_force_performance_level
-        sleep 1
 elif [[ $(cat /sys/class/drm/$IGPU/device/gpu_busy_percent) -lt 34 ]]
 then
         echo "low" > /sys/class/drm/$IGPU/device/power_dpm_force_performance_level
@@ -90,27 +87,31 @@ then
         echo "auto" > /sys/class/drm/$IGPU/device/power_dpm_force_performance_level
 else
         gpu_governor
-	#echo "low" > /sys/class/drm/$IGPU/device/power_dpm_force_performance_level
 fi
 }
 
-# Manually set gpu to performance level "auto" (if set to 1)
+# If the dGPU becomes active then set the iGPU to performance level "auto"
+# otherwise continue to the gpu_cpu_boostclock function
 gpu() {
-if [[ $(cat /sys/class/drm/$DGPU/device/power/runtime_status) == active ]]
-then
-	echo "auto" > /sys/class/drm/$IGPU/device/power_dpm_force_performance_level
-elif [[ $PS_GPU_PERFORMANCE_MODE == 1 && $POWERPROFILE == power-saver ]]
-then
-        echo "auto" > /sys/class/drm/$IGPU/device/power_dpm_force_performance_level
-elif [[ $B_GPU_PERFORMANCE_MODE == 1 && $POWERPROFILE == balanced ]]
-then
-        echo "auto" > /sys/class/drm/$IGPU/device/power_dpm_force_performance_level
-elif [[ $P_GPU_PERFORMANCE_MODE == 1 && $POWERPROFILE == performance ]]
-then
-        echo "auto" > /sys/class/drm/$IGPU/device/power_dpm_force_performance_level
-else
-        gpu_cpu_boostclock
-fi
+for i in {1..20}
+do
+        if [[ $(cat /sys/class/drm/$DGPU/device/power/runtime_status) == active ]]
+        then
+                echo "auto" > /sys/class/drm/$IGPU/device/power_dpm_force_performance_level
+        elif [[ $PS_GPU_PERFORMANCE_MODE == 1 && $POWERPROFILE == power-saver ]]
+        then
+                echo "auto" > /sys/class/drm/$IGPU/device/power_dpm_force_performance_level
+        elif [[ $B_GPU_PERFORMANCE_MODE == 1 && $POWERPROFILE == balanced ]]
+        then
+                echo "auto" > /sys/class/drm/$IGPU/device/power_dpm_force_performance_level
+        elif [[ $P_GPU_PERFORMANCE_MODE == 1 && $POWERPROFILE == performance ]]
+        then
+                echo "auto" > /sys/class/drm/$IGPU/device/power_dpm_force_performance_level
+        else
+                gpu_cpu_boostclock
+        fi
+sleep 0.25
+done
 }
 
 # loop
@@ -128,14 +129,15 @@ do
 		systemctl set-property --runtime -- system.slice AllowedCPUs=$PS_ALLOWEDCPUS
 		systemctl set-property --runtime -- init.scope AllowedCPUs=$PS_ALLOWEDCPUS
 		gpu
-                if [[ $PS_BOOSTCLOCK == 1 ]]
-                then
-                        echo 1 > /sys/devices/system/cpu/cpufreq/boost
-                else
-                        echo 0 > /sys/devices/system/cpu/cpufreq/boost
-                fi
+		if [[ $PS_BOOSTCLOCK == 1 ]]
+        then
+                echo 1 > /sys/devices/system/cpu/cpufreq/boost
+        else
+                echo 0 > /sys/devices/system/cpu/cpufreq/boost
+        fi
 
 	    ;;
+
  	  balanced)
 		ryzenadj --$B_DC_AC
 		ryzenadj -a $B_A -b $B_B -c $B_C -k $B_K -f $B_F
@@ -145,13 +147,14 @@ do
 		systemctl set-property --runtime -- system.slice AllowedCPUs=$B_ALLOWEDCPUS
 		systemctl set-property --runtime -- init.scope AllowedCPUs=$B_ALLOWEDCPUS
 		gpu
-               if [[ $B_BOOSTCLOCK == 1 ]]
-                then
+        if [[ $B_BOOSTCLOCK == 1 ]]
+        then
 			echo 1 > /sys/devices/system/cpu/cpufreq/boost
-                else
+        else
 			echo 0 > /sys/devices/system/cpu/cpufreq/boost
 		fi
 	    ;;
+
 	 performance)
 		ryzenadj --$P_DC_AC
 		ryzenadj -a $P_A -b $P_B -c $P_C -k $P_K -f $P_F
@@ -161,13 +164,12 @@ do
 		systemctl set-property --runtime -- system.slice AllowedCPUs=$P_ALLOWEDCPUS
 		systemctl set-property --runtime -- init.scope AllowedCPUs=$P_ALLOWEDCPUS
 		gpu
-                if [[ $P_BOOSTCLOCK == 1 ]]
-                then
+        if [[ $P_BOOSTCLOCK == 1 ]]
+        then
 			echo 1 > /sys/devices/system/cpu/cpufreq/boost
-                else
+        else
 			echo 0 > /sys/devices/system/cpu/cpufreq/boost
 		fi
 	    ;;
 	esac
-sleep 6
 done
