@@ -2,9 +2,12 @@
 Description=Custom power profiles I guess
 
 [Service]
-ExecStart=/power-profiles.sh
+Type=simple
+ExecStartPre=sleep 3
+ExecStart=/usr/bin/power-profiles
+#StandardOutput=file:/var/log/power-profiles.log
 StandardOutput=null
-StandardError=journal
+StandardError=null
 
 [Install]
 WantedBy=default.target

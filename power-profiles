@@ -1,0 +1,267 @@
+#!/bin/bash
+# Made by SnipeX_ :)
+
+# Edit variables at "/etc/power-profiles.conf"
+#source "/usr/share/power-profiles.conf"
+#if [ -f "/etc/power-profiles.conf" ]
+#then
+source "/etc/power-profiles.conf"
+#fi
+
+# integrated/dedicated GPU number
+# It's going to be either card1 or card0
+#IGPU=card0
+#DGPU=card1
+
+# This probably (definitely) only works on AMD/NVIDIA systems!
+if [[ $(cat /sys/class/drm/card0/device/vendor) == "0x1002" ]]
+then
+        IGPU=card0
+	DGPU=card1
+else
+        IGPU=card1
+	DGPU=card0
+fi
+
+echo "manual" > /sys/class/drm/$IGPU/device/power_dpm_force_performance_level
+
+igpu_sclk_low() {
+echo "0" > /sys/class/drm/$IGPU/device/pp_dpm_sclk #200MHz Shader clock
+}
+igpu_sclk_med() {
+echo "0 1" > /sys/class/drm/$IGPU/device/pp_dpm_sclk #750MHz Shader clock
+}
+igpu_sclk_high() {
+echo "0 1 2" > /sys/class/drm/$IGPU/device/pp_dpm_sclk #1750MHz Shader clock
+}
+igpu_mclk_low() {
+echo "1" > /sys/class/drm/$IGPU/device/pp_dpm_mclk #400MHz Memory clock
+}
+igpu_mclk_high() {
+echo "0 1" > /sys/class/drm/$IGPU/device/pp_dpm_mclk #1600MHz Memory clock
+}
+
+# If the iGPU's load goes above 90% the iGPU performance level will be set to "auto"
+# If it's below the threshold after a certain amount of time the performance level will be set to "low"
+igpu_custom_governor() {
+echo " "
+echo "entering gpu_custom_governor()"
+if [[ $(cat /sys/class/drm/$IGPU/device/gpu_busy_percent) -gt 80 ]]
+then
+	igpu_sclk_high
+	echo auto GPU USAGE IS ABOVE 80%
+elif [[ $(cat /sys/class/drm/$IGPU/device/gpu_busy_percent) -lt 25 ]]
+then
+	igpu_sclk_low
+	echo low GPU USAGE IS BELOW 30%
+else
+	if [[ $(cat /sys/class/drm/$IGPU/device/power_dpm_force_performance_level) == low ]]
+	then
+		echo CURRENT PERFORMANCE MODE IS low BECAUSE THE USAGE IS ABOVE 30% AND BELOW 85%
+	else
+		echo CURRENT PERFORMANCE MODE IS auto BECAUSE THE USAGE HASNT DROPPED BELOW 30%
+	fi
+fi
+}
+
+
+# Check if CPU Boostclock is enabled -> if yes -> put the performance level of the iGPU to "auto"
+# 				     -> if not -> continue to the gpu_governor function
+## Why put the iGPU to the performance level "auto" when the boostclock is enabled?
+## When the iGPU is set to "low" the memory clock drops to 400MHz and limits the CPU's performance to about 80% of its actual potential
+igpu_shader_clock() {
+echo " "
+echo "entering igpu_shader_clock()"
+if [[ $PS_IGPU_CUSTOM_GOVERNOR == 0 &&  $POWERPROFILE == power-saver ]]
+then
+	igpu_sclk_$PS_IGPU_SHADER_CLOCK
+	echo IGPU set to $PS_IGPU_SHADER_CLOCK
+elif [[ $B_IGPU_CUSTOM_GOVERNOR == 0 && $POWERPROFILE == balanced ]]
+then
+	igpu_sclk_$B_IGPU_SHADER_CLOCK
+	echo IGPU set to $B_IGPU_SHADER_CLOCK
+elif [[ $P_IGPU_CUSTOM_GOVERNOR == 0 && $POWERPROFILE == performance ]]
+then
+	igpu_sclk_$P_IGPU_SHADER_CLOCK
+	echo IGPU set to $P_IGPU_SHADER_CLOCK
+elif [[ $PS_IGPU_SHADER_CLOCK_ALWAYS_LOW == 1 && $POWERPROFILE == power-saver ]]
+then
+	igpu_sclk_low
+	echo IGPU set to low
+elif [[ $B_IGPU_SHADER_CLOCK_ALWAYS_LOW == 1 && $POWERPROFILE == balanced ]]
+then
+	igpu_sclk_low
+	echo IGPU set to low
+elif [[ $P_IGPU_SHADER_CLOCK_ALWAYS_LOW == 1 && $POWERPROFILE == performance ]]
+then
+	igpu_sclk_low
+	echo IGPU set to low
+else
+	igpu_custom_governor
+fi
+}
+
+
+# If the dGPU becomes active then set the iGPU to performance level "auto"
+# otherwise continue to the gpu_cpu_boostclock function
+echo " "
+gpu() {
+echo "entering gpu()"
+	if [[ $(cat /sys/bus/pci/drivers/vfio-pci/0000:01:00.0/vendor) == 0x10de ]]
+	then
+		echo  DGPU is used by vfio-pci "(VM)"
+		igpu_shader_clock
+        elif [[ $(cat /sys/class/drm/$DGPU/device/power/runtime_status) == active ]]
+        then
+		igpu_sclk_high
+		echo auto DGPU ACTIVE
+	else
+		igpu_shader_clock
+        fi
+}
+
+
+#cpu_usage() {
+#USAGE=$(top -b -1 -w79 -p1 -n 1| tail -n +3 | head -16 | awk -Fid, '{print $1}' | cut -c 36-40 | cut -f1 -d"," | sort -n | head -1 | grep -o -E '[0-9]+' | head -1)
+#echo $USAGE
+#}
+
+# this is a loop for "instantly" changing the parameters after changing the power profile
+loop_val=45 # the number of times to loop, (gov_loop_val * 0.5) in seconds | so for a loop_val value of 90 the parameters will get set each time after around 45 seconds
+loop() {
+loop_var=0
+while [[ $loop_var -lt $loop_val ]]
+do
+echo " "
+update_vars
+	loop_var=$(($loop_var + 1))
+	echo $loop_var
+
+		if [[ $POWERPROFILE != $POWERPROFILE_CHANGE || $AC_STATE != $AC_CHANGE ]]
+		then
+			echo -e  "powerprofile changed!" $POWERPROFILE_CHANGE "-->" $POWERPROFILE "            "  "AC state changed!" $AC_CHANGE "-->" $AC_STATE
+			POWERPROFILE_CHANGE=$(powerprofilesctl get)
+			AC_CHANGE=$(cat /sys/class/power_supply/AC0/online)
+			#echo $AC_STATE " / " $POWERPROFILE
+
+			#### Refresh-rate related stuff ####
+			if [[ $POWERPROFILE == power-saver && $AC_STATE == 0 ]]
+			then
+				echo "Changed FrameRate to 60fps"
+				systemctl --machine snipex@.host --user start 60fps.service
+			elif  [[ ( $POWERPROFILE == balanced  || $POWERPROFILE == performance ) && $AC_STATE == 0 ]]
+			then
+                                echo "Changed FrameRate to 120fps"
+                                systemctl --machine snipex@.host --user start 120fps.service
+			else
+				systemctl --machine snipex@.host --user start 120fps.service
+			fi
+			#### Refresh-rate related stuff (end) ####
+
+        		loop_var=$loop_val
+		else
+        		echo powerprofile and/or AC state not changed "($POWERPROFILE)" / "($AC_STATE)"
+		fi
+
+
+if [[ $AC_STATE == 1 && $PERF_ON_AC == 1 ]]
+then echo " "
+else gpu
+fi
+
+
+#if [[ $PS_IGPU_CUSTOM_GOVERNOR == 1 && $POWERPROFILE == power-saver ]]
+#then
+#        sleep 0.5
+#elif [[ $B_IGPU_CUSTOM_GOVERNOR == 1 && $POWERPROFILE == balanced ]]
+#then
+#        sleep 0.5
+#elif [[ $P_IGPU_CUSTOM_GOVERNOR == 1 && $POWERPROFILE == performance ]]
+#then
+#        sleep 0.5
+#else
+sleep 3
+#fi
+done
+}
+
+
+update_vars() {
+  POWERPROFILE=$(powerprofilesctl get)
+  AC_STATE=$(cat /sys/class/power_supply/AC0/online)
+}
+
+# main loop
+while :
+do
+echo "manual" > /sys/class/drm/$IGPU/device/power_dpm_force_performance_level
+update_vars
+
+echo "entering while: do"
+if [[ $AC_STATE == 1 ]]
+then
+        ryzenadj --max-performance
+	if [[ $PERF_ON_AC == 1 ]]
+	then
+        	igpu_sclk_high
+        	igpu_mclk_high
+	fi
+else
+        ryzenadj --power-saving
+fi
+
+	echo $POWERPROFILE / $AC_STATE
+
+	case $(powerprofilesctl get) in
+	  power-saver)
+		ryzenadj -a $PS_A -b $PS_B -c $PS_C -k $PS_K -f $PS_F
+		echo $PS_GOVERNOR | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+		echo $PS_CPU_MAX_FREQ | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq
+		systemctl set-property --runtime -- user.slice AllowedCPUs=$PS_ALLOWEDCPUS
+		systemctl set-property --runtime -- system.slice AllowedCPUs=$PS_ALLOWEDCPUS
+		systemctl set-property --runtime -- init.scope AllowedCPUs=$PS_ALLOWEDCPUS
+		igpu_mclk_$PS_IGPU_MEMORY_CLOCK
+		if [[ $PS_BOOSTCLOCK == 1 ]]
+	        then
+        	        echo 1 > /sys/devices/system/cpu/cpufreq/boost
+        	else
+                	echo 0 > /sys/devices/system/cpu/cpufreq/boost
+        	fi
+		loop
+	    ;;
+
+ 	  balanced)
+		ryzenadj -a $B_A -b $B_B -c $B_C -k $B_K -f $B_F
+		echo $B_GOVERNOR | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+		echo $B_CPU_MAX_FREQ | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq
+		systemctl set-property --runtime -- user.slice AllowedCPUs=$B_ALLOWEDCPUS
+		systemctl set-property --runtime -- system.slice AllowedCPUs=$B_ALLOWEDCPUS
+		systemctl set-property --runtime -- init.scope AllowedCPUs=$B_ALLOWEDCPUS
+		igpu_mclk_$B_IGPU_MEMORY_CLOCK
+        	if [[ ($B_BOOSTCLOCK == 1) || ($AC_STATE == 1 && $PERF_ON_AC == 1) ]]
+        	then
+			echo 1 > /sys/devices/system/cpu/cpufreq/boost
+        	else
+			echo 0 > /sys/devices/system/cpu/cpufreq/boost
+		fi
+		loop
+	    ;;
+
+	 performance)
+		ryzenadj -a $P_A -b $P_B -c $P_C -k $P_K -f $P_F
+		echo $P_GOVERNOR | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+		echo $P_CPU_MAX_FREQ | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq
+		systemctl set-property --runtime -- user.slice AllowedCPUs=$P_ALLOWEDCPUS
+		systemctl set-property --runtime -- system.slice AllowedCPUs=$P_ALLOWEDCPUS
+		systemctl set-property --runtime -- init.scope AllowedCPUs=$P_ALLOWEDCPUS
+		igpu_mclk_$P_IGPU_MEMORY_CLOCK
+        	if [[ $P_BOOSTCLOCK == 1 ]]
+        	then
+			echo 1 > /sys/devices/system/cpu/cpufreq/boost
+        	else
+			echo 0 > /sys/devices/system/cpu/cpufreq/boost
+		fi
+		loop
+	    ;;
+	esac
+done

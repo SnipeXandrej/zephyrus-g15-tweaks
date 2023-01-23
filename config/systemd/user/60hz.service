@@ -1,0 +1,8 @@
+[Unit]
+Description="Set screen refresh rate to 60Hz"
+
+[Service]
+ExecStart="kscreen-doctor output.'eDP-1'.mode.1920x1080@60"
+
+[Install]
+WantedBy=default.target

@@ -4,6 +4,7 @@
 Here I just want to share my personal tweaks/scripts that I use on my daily-driver laptop.
 
 I use Arch, btw.
+**Do note that thing(s) like changing the screen refresh rate will probably only work on the KDE Plasma Wayland session. If you use something else, then you will need to adjust the xxxhz.service systemd services located in "`config/systemd/user/`".**
 
 # Applying Kernel parameters
 For GRUB users:
@@ -27,7 +28,9 @@ This means that you can use the GPU whenever you want but when you for example s
 **So here are the steps you have to take to make D3 power state work**
 
 1. * Create a file called `nvidia.conf` in `/etc/modprobe.d/` by typing `sudo nano /etc/modprobe.d/nvidia.conf` into terminal and copy/paste `options nvidia "NVreg_DynamicPowerManagement=0x02"` into the file. This enables the power management.
-2. * Turn off NVIDIA modeset by putting `nvidia-drm.modeset=0` in the kernel cmdline, and for good measure also `rd.driver.blacklist=nouveau modprobe.blacklist=nouveau`, this will block nouveau from loading.
+2. * Turn off NVIDIA modeset by putting `nvidia-drm.modeset=0` in the kernel cmdline, and for good measure also `rd.driver.blacklist=nouveau modprobe.blacklist=nouveau`, this will block nouveau from loading. (**Do note that changing nvidia modesetting to 0 causes screen tearing in games, even on Wayland! Setting it to 1 prevents the GPU to suspend, but is still much easier to suspend manually.**)
+
+
 3. * Run `sudo rm -f /usr/share/glvnd/egl_vendor.d/10_nvidia.json`. This file points to the EGL library, but that file seems to prevent the GPU from going into the D3 power state, so we remove it.
 4. * And if you are using any login/display managers that uses Xorg you will have to remove (Please backup these files if anything goes wrong!) any config that points to NVIDIA because that seems to load an Xorg process on the GPU that will always run on it and will prevent the GPU from going into the D3 state. These configs are located in `/etc/X11/` `etc/X11/xorg.conf.d/` and `/usr/share/X11/xorg.conf.d/`. There should be one located in `/usr/share/X11/xorg.conf.d/` named `10-nvidia-drm-outputclass.conf`, so delete it.
 5. * Create a new file at `/lib/udev/rules.d/` called `80-nvidia-pm.rules` and copy/paste this into it
@@ -52,23 +55,21 @@ ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x0302
 
 * Reboot, ?????, Profit
 
-To check if it worked, run `cat /sys/class/drm/card0/device/power_state` in terminal and it should show D3cold, that means it's off, and should turn on (showing D0) when you run `nvidia-smi` or `nvtop`
+To check if it worked, run `cat /sys/class/drm/card{0,1}/device/power_state` in terminal and it should show D3cold, that means it's off, and should turn on (showing D0) when you run `nvidia-smi` or `nvtop`
 
 To check power draw, run `cat /sys/class/power_supply/BAT0/power_now` in terminal.
 
 **Beware that after each update of the NVIDIA package you will have to repeat steps 3 and 4!**
 
 # CPU/iGPU Tweaks
-**Required package is ryzenadj**
+**Required packages are: ryzenadj, kscreen (on KDE Plasma Wayland)**
 
 I have made a simple script where you can adjust all sorts of values that will change depending on what power profile you will use (Power Save / Balanced / Performance). For example you can choose the maximum power draw of the CPU, enable or disable cpu boost clocks and much more.
 
 
-To "install" this script you have to put it in the root directory (so the path will be like so: `/power-profiles.sh`).
-To have the script started at boot you have to create a systemd service, one way is to copy the `power-profiles.service` file to `/etc/systemd/system/`, then type `sudo systemctl daemon-reload` and `sudo systemctl enable power-profiles --now` in your terminal to enable/start the service.
+To "install" this script you have to put the bash script `power-profiles` into `/usr/local/bin/`.
+To have the script started at boot you have to create a systemd service, one way is to copy the `power-profiles.service` file to `/etc/systemd/system/`, then type `sudo systemctl daemon-reload` and `sudo systemctl enable power-profiles --now` in your terminal to enable/start the service. For the Refresh Rate changing stuff, you need to copy the systemd services found in `config/systemd/user/{60hz.service,120hz.service}` to your `.config/systemd/user/` directory located in your home directory.
 
 **Miscellaneous tweaks**
 
-Increasing the shared VRAM for the AMD APU from the default 3GB to 4GB (or more if you want). To increase VRAM you need to add `amdgpu.gttsize=4096` in the kernel cmdline. (Size is in MEGABYTES, so 4096 equals to 4GB)
-
-(Ignore this comment :))
+Increasing the shared VRAM for the AMD APU from the default 3GB to 4GB (or more if you want). To increase VRAM you need to add amdgpu.gttsize=4096 in the kernel cmdline. (Size is in MEGABYTES, so 4096 equals to 4GB)
