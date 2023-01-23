@@ -70,3 +70,5 @@ To have the script started at boot you have to create a systemd service, one way
 **Miscellaneous tweaks**
 
 Increasing the shared VRAM for the AMD APU from the default 3GB to 4GB (or more if you want). To increase VRAM you need to add `amdgpu.gttsize=4096` in the kernel cmdline. (Size is in MEGABYTES, so 4096 equals to 4GB)
+
+(Ignore this comment :))
