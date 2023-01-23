@@ -147,14 +147,14 @@ update_vars
 			#### Refresh-rate related stuff ####
 			if [[ $POWERPROFILE == power-saver && $AC_STATE == 0 ]]
 			then
-				echo "Changed FrameRate to 60fps"
-				systemctl --machine snipex@.host --user start 60fps.service
+				echo "Changed FrameRate to 60hz"
+				systemctl --machine snipex@.host --user start 60hz.service
 			elif  [[ ( $POWERPROFILE == balanced  || $POWERPROFILE == performance ) && $AC_STATE == 0 ]]
 			then
-                                echo "Changed FrameRate to 120fps"
-                                systemctl --machine snipex@.host --user start 120fps.service
+                                echo "Changed FrameRate to 120hz"
+                                systemctl --machine snipex@.host --user start 120hz.service
 			else
-				systemctl --machine snipex@.host --user start 120fps.service
+				systemctl --machine snipex@.host --user start 120hz.service
 			fi
 			#### Refresh-rate related stuff (end) ####
 

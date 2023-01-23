@@ -4,7 +4,7 @@ Description=Custom power profiles I guess
 [Service]
 Type=simple
 ExecStartPre=sleep 3
-ExecStart=/usr/bin/power-profiles
+ExecStart=/usr/local/bin/power-profiles
 #StandardOutput=file:/var/log/power-profiles.log
 StandardOutput=null
 StandardError=null
