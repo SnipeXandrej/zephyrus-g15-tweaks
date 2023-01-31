@@ -117,7 +117,7 @@ echo "entering gpu()"
         echo auto DGPU ACTIVE
     else
         igpu_shader_clock
-        fi
+    fi
 }
 
 
@@ -201,11 +201,6 @@ echo "entering while: do"
 if [[ $AC_STATE == 1 ]]
 then
         ryzenadj --max-performance
-    if [[ $PERF_ON_AC == 1 ]]
-    then
-            igpu_sclk_high
-            igpu_mclk_high
-    fi
 else
         ryzenadj --power-saving
 fi

@@ -1,6 +1,6 @@
-# You are doing everything at your OWN risk! I do not hold any liability for any damages done to your hardware!
+# You are doing everything at your OWN risk! I do not hold any liability for any damage done to your hardware!
 
-# Zephyrus G15 Tweaks (2020 model)
+# Zephyrus G15 "GA502IV" Tweaks (2020 model)
 Here I just want to share my personal tweaks/scripts that I use on my daily-driver laptop.
 
 I use Arch, btw.
@@ -12,7 +12,7 @@ When we are setting certain kernel parameters, we put these parameters into the 
 After we are done setting the parameters we need to regenerate the grub config by typing `sudo grub-mkconfig -o /boot/grub/grub.cfg` into the terminal. Then reboot for the changes to apply.
 
 # NVIDIA GPU D3 power state on Arch Linux
-**All of this was tested on KDE Plasma using the Wayland session and SDDM as the Login manager.**
+**All of this was tested on KDE Plasma using the Wayland session and SDDM as the Login Manager.**
 
 Of course many people probably use the [supergfxctl](https://gitlab.com/asus-linux/supergfxctl) tool to manage their NVIDIA GPU whether you want to disable it or enable it. But it has one big disadvantage, you always have to logout from your current session to actually change to the desired mode.
 The thing is that it is possible to use the D3 power state (like in Windows) but it is kinda broken on Linux without some manual tweaking.
@@ -73,3 +73,5 @@ To have the script started at boot you have to create a systemd service, one way
 **Miscellaneous tweaks**
 
 Increasing the shared VRAM for the AMD APU from the default 3GB to 4GB (or more if you want). To increase VRAM you need to add amdgpu.gttsize=4096 in the kernel cmdline. (Size is in MEGABYTES, so 4096 equals to 4GB)
+
+Decrease your power usage (at least at idle) by using these kernel boot parameters: "`pcie_aspm=force pcie_aspm.policy=powersave`"
