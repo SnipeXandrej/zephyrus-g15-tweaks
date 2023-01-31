@@ -198,16 +198,28 @@ echo "manual" > /sys/class/drm/$IGPU/device/power_dpm_force_performance_level
 update_vars
 
 echo "entering while: do"
-if [[ $AC_STATE == 1 ]]
+if [[ (($POWERPROFILE == power-saver && PS_AC_DC_MANUAL == 0) || ($POWERPROFILE == balanced && B_AC_DC_MANUAL == 0) || ($POWERPROFILE == performance && P_AC_DC_MANUAL == 0)) ]]
 then
+    if [[ $AC_STATE == 1 ]]
+    then
         ryzenadj --max-performance
-else
+    else
         ryzenadj --power-saving
+    fi
+elif [[ $POWERPROFILE == power-saver ]]
+then
+    ryzenadj --$PS_AC_DC
+elif [[ $POWERPROFILE == balanced ]]
+then
+    ryzenadj --$B_AC_DC
+elif [[ $POWERPROFILE == performance ]]
+then
+    ryzenadj --$P_AC_DC
 fi
 
     echo $POWERPROFILE / $AC_STATE
 
-    case $(powerprofilesctl get) in
+    case $POWERPROFILE in
         power-saver)
         ryzenadj -a $PS_A -b $PS_B -c $PS_C -k $PS_K -f $PS_F
         echo $PS_GOVERNOR | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
