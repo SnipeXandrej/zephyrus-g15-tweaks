@@ -13,6 +13,9 @@ source "/etc/power-profiles.conf"
 #IGPU=card0
 #DGPU=card1
 
+# set a delay of 5 seconds, so everything has the time to load-in and finalize before writing paths and stuff into the variables
+sleep 5
+
 # This probably (definitely) only works on AMD/NVIDIA systems!
 if [[ $(cat /sys/class/drm/card0/device/vendor) == "0x1002" ]]
 then
@@ -111,8 +114,8 @@ echo "entering gpu()"
     then
         echo  DGPU is used by vfio-pci "(VM)"
         igpu_shader_clock
-        elif [[ $(cat /sys/class/drm/$DGPU/device/power/runtime_status) == active ]]
-        then
+    elif [[ $(cat /sys/class/drm/$DGPU/device/power/runtime_status) == active ]]
+    then
         igpu_sclk_high
         echo auto DGPU ACTIVE
     else
@@ -151,8 +154,8 @@ update_vars
                 systemctl --machine snipex@.host --user start 60hz.service
             elif  [[ ( $POWERPROFILE == balanced  || $POWERPROFILE == performance ) && $AC_STATE == 0 ]]
             then
-                                echo "Changed FrameRate to 120hz"
-                                systemctl --machine snipex@.host --user start 120hz.service
+                echo "Changed FrameRate to 120hz"
+                systemctl --machine snipex@.host --user start 120hz.service
             else
                 systemctl --machine snipex@.host --user start 120hz.service
             fi
@@ -162,12 +165,6 @@ update_vars
         else
                 echo powerprofile and/or AC state not changed "($POWERPROFILE)" / "($AC_STATE)"
         fi
-
-
-if [[ $AC_STATE == 1 && $PERF_ON_AC == 1 ]]
-then echo " "
-else gpu
-fi
 
 
 #if [[ $PS_IGPU_CUSTOM_GOVERNOR == 1 && $POWERPROFILE == power-saver ]]
@@ -198,7 +195,7 @@ echo "manual" > /sys/class/drm/$IGPU/device/power_dpm_force_performance_level
 update_vars
 
 echo "entering while: do"
-if [[ (($POWERPROFILE == power-saver && PS_AC_DC_MANUAL == 0) || ($POWERPROFILE == balanced && B_AC_DC_MANUAL == 0) || ($POWERPROFILE == performance && P_AC_DC_MANUAL == 0)) ]]
+if [[ (($POWERPROFILE == power-saver && $PS_AC_DC_MANUAL == 0) || ($POWERPROFILE == balanced && $B_AC_DC_MANUAL == 0) || ($POWERPROFILE == performance && $P_AC_DC_MANUAL == 0)) ]]
 then
     if [[ $AC_STATE == 1 ]]
     then
@@ -245,7 +242,7 @@ fi
         systemctl set-property --runtime -- system.slice AllowedCPUs=$B_ALLOWEDCPUS
         systemctl set-property --runtime -- init.scope AllowedCPUs=$B_ALLOWEDCPUS
         igpu_mclk_$B_IGPU_MEMORY_CLOCK
-            if [[ ($B_BOOSTCLOCK == 1) || ($AC_STATE == 1 && $PERF_ON_AC == 1) ]]
+            if [[ ($B_BOOSTCLOCK == 1) || ($AC_STATE == 1) ]]
             then
             echo 1 > /sys/devices/system/cpu/cpufreq/boost
             else
