@@ -242,7 +242,7 @@ fi
         systemctl set-property --runtime -- system.slice AllowedCPUs=$B_ALLOWEDCPUS
         systemctl set-property --runtime -- init.scope AllowedCPUs=$B_ALLOWEDCPUS
         igpu_mclk_$B_IGPU_MEMORY_CLOCK
-            if [[ ($B_BOOSTCLOCK == 1) || ($AC_STATE == 1) ]]
+            if [[ ($B_BOOSTCLOCK == 1) ]]
             then
             echo 1 > /sys/devices/system/cpu/cpufreq/boost
             else
