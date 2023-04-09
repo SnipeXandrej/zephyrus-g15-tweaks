@@ -166,6 +166,7 @@ update_vars
                 echo powerprofile and/or AC state not changed "($POWERPROFILE)" / "($AC_STATE)"
         fi
 
+gpu
 
 #if [[ $PS_IGPU_CUSTOM_GOVERNOR == 1 && $POWERPROFILE == power-saver ]]
 #then
