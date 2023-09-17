@@ -2,7 +2,7 @@
 Description="Set screen refresh rate to 120Hz"
 
 [Service]
-ExecStart="kscreen-doctor output.'eDP-1'.mode.1920x1080@120"
+ExecStart=kscreen-doctor output.'eDP-1'.mode.1920x1080@120
 
 [Install]
 WantedBy=default.target
